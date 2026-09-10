@@ -1,0 +1,36 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8080
+  },
+  "paths": {
+    "media_dirs": ["./photos"],
+    "cache_dir": "./cache",
+    "static_dir": "./static"
+  },
+  "image": {
+    "max_width": 4096,
+    "max_height": 2304,
+    "webp_quality": 85,
+    "allowed_extensions": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
+                           ".tiff", ".tif", ".bmp", ".svg",
+                           ".cr2", ".cr3", ".dng", ".arw", ".nef", ".orf",
+                           ".rw2", ".raf", ".pef", ".srf", ".raw", ".3fr",
+                           ".ari", ".srw", ".x3f", ".erf", ".mrw", ".dcr",
+                           ".kdc", ".fff", ".mos", ".iiq"]
+  },
+  "video": {
+    "allowed_extensions": [".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"],
+    "default_muted": false,
+    "default_volume": 80
+  },
+  "gif": {
+    "enabled": true
+  },
+  "display": {
+    "interval_seconds": 30,
+    "transition_duration_ms": 1500,
+    "shuffle": false,
+    "fit_mode": "cover"
+  }
+}

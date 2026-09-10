@@ -1,0 +1,324 @@
+/* ================================================================
+   YankunFrame - Display-P3 optimized styles for Retina 4K Kiosk
+   ================================================================ */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: color(display-p3 0.02 0.02 0.02);
+  background: #050505; /* fallback for non-P3 browsers */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* --- Photo Frame --- */
+.frame {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.photo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.photo.next {
+  opacity: 0;
+  z-index: 0;
+}
+
+video.photo {
+  background: #000;
+}
+/* --- Settings Icon --- */
+.settings-icon {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.settings-icon.visible {
+  opacity: 1;
+}
+/* --- Settings Panel --- */
+.settings-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 28px 32px;
+  z-index: 200;
+  min-width: 300px;
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.settings-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-panel.hidden {
+  display: none;
+}
+
+.settings-panel h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.setting-row label {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* --- Custom Select (replaces native <select>) --- */
+.custom-select {
+  position: relative;
+  min-width: 120px;
+  font-size: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.custom-select-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 28px 6px 12px;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.custom-select-trigger::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(255,255,255,0.6);
+}
+
+.custom-select.open .custom-select-trigger::after {
+  border-top: none;
+  border-bottom: 5px solid rgba(255,255,255,0.6);
+}
+
+.custom-select-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(30, 30, 30, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  list-style: none;
+  padding: 4px 0;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.custom-select.open .custom-select-options {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.custom-select-options li {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.75);
+  transition: background 0.1s;
+}
+
+.custom-select-options li:hover {
+  background: rgba(74, 158, 255, 0.25);
+  color: white;
+}
+
+.custom-select-options li.selected {
+  background: rgba(74, 158, 255, 0.15);
+  color: #4a9eff;
+}
+
+#settings-close {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#settings-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* --- Settings: Video & Media Dirs --- */
+.settings-panel h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 16px 0 10px;
+}
+
+.setting-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin: 12px 0 4px;
+}
+
+.setting-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4a9eff;
+  cursor: pointer;
+}
+
+.setting-row input[type="range"] {
+  width: 100px;
+  accent-color: #4a9eff;
+  cursor: pointer;
+}
+
+#vol-label {
+  display: inline-block;
+  width: 36px;
+  text-align: right;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+#media-dirs-list {
+  margin-bottom: 8px;
+}
+
+.media-dir-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.media-dir-item button {
+  background: rgba(255,80,80,0.2);
+  color: #ff6b6b;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.media-dir-item button:hover {
+  background: rgba(255,80,80,0.4);
+}
+
+.add-dir-row {
+  gap: 6px;
+}
+
+.add-dir-row input[type="text"] {
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.add-dir-row button {
+  background: rgba(74,158,255,0.2);
+  color: #4a9eff;
+  border: 1px solid rgba(74,158,255,0.3);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-dir-row button:hover {
+  background: rgba(74,158,255,0.35);
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YankunFrame">
+<title>YankunFrame</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body tabindex="-1" autofocus>
+
+<div id="frame" class="frame">
+  <img id="img-a" class="photo" src="" alt="" loading="eager">
+  <img id="img-b" class="photo" src="" alt="" loading="eager">
+  <video id="vid-a" class="photo" src="" muted loop playsinline disablepictureinpicture disableremoteplayback></video>
+  <video id="vid-b" class="photo" src="" muted loop playsinline disablepictureinpicture disableremoteplayback></video>
+</div>
+
+<div id="settings-icon" class="settings-icon" title="Settings">&#9881;</div>
+
+<div id="settings-panel" class="settings-panel hidden">
+  <h2>Settings</h2>
+  <div class="setting-row">
+    <label>Display Mode</label>
+    <div class="custom-select" id="set-fit">
+      <div class="custom-select-trigger">Cover</div>
+      <ul class="custom-select-options">
+        <li data-value="cover">Cover</li>
+        <li data-value="contain">Contain</li>
+      </ul>
+    </div>
+  </div>
+  <div class="setting-row">
+    <label>Interval</label>
+    <div class="custom-select" id="set-interval">
+      <div class="custom-select-trigger">30s</div>
+      <ul class="custom-select-options">
+        <li data-value="10">10s</li>
+        <li data-value="30">30s</li>
+        <li data-value="60">1 min</li>
+        <li data-value="300">5 min</li>
+      </ul>
+    </div>
+  </div>
+  <div class="setting-row">
+    <label>Transition</label>
+    <div class="custom-select" id="set-transition">
+      <div class="custom-select-trigger">1.5s</div>
+      <ul class="custom-select-options">
+        <li data-value="500">0.5s</li>
+        <li data-value="1000">1s</li>
+        <li data-value="1500">1.5s</li>
+        <li data-value="2000">2s</li>
+      </ul>
+    </div>
+  </div>
+  <div class="setting-row">
+    <label>Order</label>
+    <div class="custom-select" id="set-shuffle">
+      <div class="custom-select-trigger">Sequential</div>
+      <ul class="custom-select-options">
+        <li data-value="0">Sequential</li>
+        <li data-value="1">Random</li>
+      </ul>
+    </div>
+  </div>
+  <hr class="setting-divider">
+  <h3>Video</h3>
+  <div class="setting-row">
+    <label>Always Muted</label>
+    <input type="checkbox" id="set-video-muted">
+  </div>
+  <div class="setting-row" id="vol-row">
+    <label>Volume</label>
+    <input type="range" id="set-video-volume" min="0" max="100" value="80">
+    <span id="vol-label">80%</span>
+  </div>
+  <hr class="setting-divider">
+  <h3>Media Folders</h3>
+  <div id="media-dirs-list"></div>
+  <div class="setting-row add-dir-row">
+    <input type="text" id="new-media-dir" placeholder="./photos">
+    <button id="btn-add-dir">Add</button>
+  </div>
+  <button id="settings-close">Close</button>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/preloader.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
