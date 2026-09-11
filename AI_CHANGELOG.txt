@@ -33,6 +33,34 @@ Created: AI_AGENT_GUIDE.md
 
 NOTE: Must deploy to iMac AND recompile the .app (bash compile.sh) for Swift changes.
       Server + static changes take effect without recompilation (just restart app).
+[2026-09-11] Random video start position
+---------------------------------------------------
+- Modified: static/js/preloader.js
+  - Added _setupRandomStart(vid, displayInterval) helper function
+    that listens for 'loadedmetadata' and sets currentTime to a
+    random position, leaving at least displayInterval seconds
+    before the end of the video
+  - setCurrent(url, mediaType, volumeSettings, displayInterval):
+    for videos, waits for metadata, seeks to random position,
+    then calls play() (instead of playing immediately from 0:00)
+  - preloadNext(url, mediaType, volumeSettings, displayInterval):
+    pre-seeks preloaded video to random position so it's ready
+    when swapped in
+  - swap(nextUrl, nextType, volumeSettings, displayInterval):
+    passes displayInterval through to internal preloadNext call
+- Modified: static/js/app.js
+  - showCurrent(): loads settings before calling setCurrent, passes
+    settings.interval
+  - scheduleNext(): loads settings before calling preloadNext, passes
+    settings.interval
+  - transition(): loads settings before calling swap, passes
+    settings.interval
+- Reason: Videos always started at 0:00, showing the same segment
+  every time. Now each video clip starts at a random position,
+  making the frame feel more dynamic. The random start is at
+  least (interval) seconds before the video end, ensuring the
+  full display duration plays through without clipping.
+
 ============================================================
 YankunFrame - AI Changelog
 ============================================================

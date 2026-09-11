@@ -159,7 +159,9 @@ var YankunApp = (() => {
     var item = media[index];
     var url = getUrl(item);
     var vol = Settings.getVideoSettings();
-    ImagePreloader.setCurrent(url, item.type, vol);
+    settings = Settings.load();
+    // [2026-09-11] Pass interval for random video start feature
+    ImagePreloader.setCurrent(url, item.type, vol, settings.interval);
     scheduleNext();
 
     // Hide loading overlay once first image is shown
@@ -175,9 +177,10 @@ var YankunApp = (() => {
     var nextItem = media[nextIdx];
     var nextUrl = getUrl(nextItem);
     var vol = Settings.getVideoSettings();
-    ImagePreloader.preloadNext(nextUrl, nextItem.type, vol);
 
     settings = Settings.load();
+    // [2026-09-11] Pass interval for random video start feature
+    ImagePreloader.preloadNext(nextUrl, nextItem.type, vol, settings.interval);
     timer = setTimeout(transition, settings.interval * 1000);
   }
 
@@ -190,10 +193,11 @@ var YankunApp = (() => {
     var afterUrl = getUrl(afterItem);
     var vol = Settings.getVideoSettings();
 
-    ImagePreloader.swap(afterUrl, afterItem.type, vol);
+    settings = Settings.load();
+    // [2026-09-11] Pass interval for random video start feature
+    ImagePreloader.swap(afterUrl, afterItem.type, vol, settings.interval);
     index = nextIdx;
 
-    settings = Settings.load();
     timer = setTimeout(transition, settings.interval * 1000);
   }
 
