@@ -9,15 +9,11 @@
     "static_dir": "./static"
   },
   "image": {
-    "max_width": 4096,
-    "max_height": 2304,
-    "webp_quality": 85,
+    "max_width": 1920,
+    "max_height": 1080,
+    "webp_quality": 60,
     "allowed_extensions": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
-                           ".tiff", ".tif", ".bmp", ".svg",
-                           ".cr2", ".cr3", ".dng", ".arw", ".nef", ".orf",
-                           ".rw2", ".raf", ".pef", ".srf", ".raw", ".3fr",
-                           ".ari", ".srw", ".x3f", ".erf", ".mrw", ".dcr",
-                           ".kdc", ".fff", ".mos", ".iiq"]
+                           ".tiff", ".tif", ".bmp", ".svg"]
   },
   "video": {
     "allowed_extensions": [".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"],

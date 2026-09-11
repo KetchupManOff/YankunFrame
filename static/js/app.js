@@ -29,16 +29,21 @@ var YankunApp = (() => {
     Settings.applyToUI(settings);
     Settings.setupPanel();
 
+    var overlay = document.getElementById("loading-overlay");
+    var msg = document.getElementById("loading-msg");
+
     try {
       media = await YankunAPI.fetchMediaList();
     } catch (e) {
       console.error("Failed to load media list:", e);
+      if (msg) msg.textContent = "Cannot connect to server. Retrying...";
       setTimeout(start, 5000);
       return;
     }
 
     if (media.length === 0) {
       console.warn("No media found, retrying in 10s...");
+      if (msg) msg.textContent = "No photos found. Check your photos folder. Retrying...";
       setTimeout(start, 10000);
       return;
     }
@@ -156,6 +161,12 @@ var YankunApp = (() => {
     var vol = Settings.getVideoSettings();
     ImagePreloader.setCurrent(url, item.type, vol);
     scheduleNext();
+
+    // Hide loading overlay once first image is shown
+    var overlay = document.getElementById("loading-overlay");
+    if (overlay) {
+      overlay.classList.add("hidden");
+    }
   }
 
   function scheduleNext() {

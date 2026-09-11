@@ -1,5 +1,6 @@
 import argparse, json, mimetypes, os, sys, traceback, urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from pathlib import Path
 
 HAS_PILLOW = False
@@ -15,29 +16,16 @@ try:
 except ImportError:
     pass
 
-HAS_RAWPY = False
-try:
-    import rawpy
-    import numpy as np
-    HAS_RAWPY = True
-except ImportError:
-    print("[WARN] rawpy not installed. RAW formats will be skipped.",
-          file=sys.stderr)
-
 def load_config(path="config.json"):
     defaults = {
         "server": {"host": "127.0.0.1", "port": 8080},
         "paths": {"media_dirs": ["./photos"], "cache_dir": "./cache",
                   "static_dir": "./static"},
         "image": {
-            "max_width": 4096, "max_height": 2304, "webp_quality": 85,
+            "max_width": 1920, "max_height": 1080, "webp_quality": 60,
             "allowed_extensions": [
                 ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
-                ".tiff", ".tif", ".bmp", ".svg",
-                ".cr2", ".cr3", ".dng", ".arw", ".nef", ".orf",
-                ".rw2", ".raf", ".pef", ".srf", ".raw", ".3fr",
-                ".ari", ".srw", ".x3f", ".erf", ".mrw", ".dcr",
-                ".kdc", ".fff", ".mos", ".iiq"]
+                ".tiff", ".tif", ".bmp", ".svg"]
         },
         "video": {
             "allowed_extensions": [".mp4", ".webm", ".mov", ".avi",
@@ -65,11 +53,6 @@ def resolve_path(base, rel):
     p = Path(rel)
     return str(p) if p.is_absolute() else str((base / p).resolve())
 
-RAW_EXTENSIONS = {
-    ".cr2", ".cr3", ".dng", ".arw", ".nef", ".orf", ".rw2", ".raf",
-    ".pef", ".srf", ".raw", ".3fr", ".ari", ".srw", ".x3f", ".erf",
-    ".mrw", ".dcr", ".kdc", ".fff", ".mos", ".iiq"
-}
 GIF_EXTENSION = ".gif"
 SVG_EXTENSION = ".svg"
 
@@ -79,7 +62,7 @@ def ext_lower(fname):
 
 
 def classify_media(fname, config):
-    """Return one of: 'image', 'video', 'gif', 'raw', None"""
+    """Return one of: 'image', 'video', 'gif', None"""
     ext = ext_lower(fname)
     img_exts = [e.lower() for e in config["image"]["allowed_extensions"]]
     vid_exts = [e.lower() for e in config["video"]["allowed_extensions"]]
@@ -88,8 +71,6 @@ def classify_media(fname, config):
     if ext == GIF_EXTENSION and config.get("gif", {}).get("enabled", True):
         return "gif"
     if ext in img_exts:
-        if ext in RAW_EXTENSIONS:
-            return "raw"
         return "image"
     return None
 
@@ -100,40 +81,11 @@ def cache_key(fname, mw, mh, q):
     return f"{safe}_{mw}x{mh}_q{q}.webp"
 
 
-def open_raw_image(path):
-    """Open a RAW file using rawpy and return a Pillow Image (RGB)."""
-    if not HAS_RAWPY:
-        return None
-    try:
-        with rawpy.imread(path) as raw:
-            try:
-                thumb = raw.extract_thumb()
-                if thumb.format == rawpy.ThumbFormat.JPEG:
-                    from io import BytesIO
-                    return Image.open(BytesIO(thumb.data)).convert("RGB")
-            except Exception:
-                pass
-            rgb = raw.postprocess(
-                use_camera_wb=True,
-                half_size=True,
-                no_auto_bright=False,
-                output_bps=8
-            )
-            return Image.fromarray(rgb)
-    except Exception:
-        return None
-
-
-def resize_and_cache(orig, cache, mw, mh, q, is_raw=False):
+def resize_and_cache(orig, cache, mw, mh, q):
     if not HAS_PILLOW:
         return False
     try:
-        if is_raw:
-            img = open_raw_image(orig)
-            if img is None:
-                return False
-        else:
-            img = Image.open(orig)
+        img = Image.open(orig)
     except Exception:
         return False
     icc = img.info.get("icc_profile", None)
@@ -178,6 +130,12 @@ MIME_MAP = {
 def guess_mime(path):
     ext = os.path.splitext(path)[1].lower()
     return MIME_MAP.get(ext) or mimetypes.guess_type(path)[0] or "application/octet-stream"
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    """Simple threaded HTTP server -- handles multiple concurrent requests.
+    Without this, a single slow RAW-image render blocks ALL other requests."""
+    daemon_threads = True  # Threads exit when main process exits
+
 
 class YankunHandler(BaseHTTPRequestHandler):
     config = None
@@ -304,23 +262,16 @@ class YankunHandler(BaseHTTPRequestHandler):
             return
 
         ext = ext_lower(fname)
-        is_raw = ext in RAW_EXTENSIONS
-        is_svg = ext == SVG_EXTENSION
 
-        # SVG & GIF: serve raw
-        if is_svg or (ext == GIF_EXTENSION and
-                      self.gif_cfg.get("enabled", True)):
+        # SVG & GIF: serve raw (no processing needed)
+        if ext == SVG_EXTENSION or (ext == GIF_EXTENSION and
+                                     self.gif_cfg.get("enabled", True)):
             self._serve_raw_file(orig, ext)
             return
 
-        # RAW: needs rawpy
-        if is_raw and not HAS_RAWPY:
-            self.send_error(415, "RAW support requires rawpy library")
-            return
-
-        mw = self.image_cfg.get("max_width", 4096)
-        mh = self.image_cfg.get("max_height", 2304)
-        q = self.image_cfg.get("webp_quality", 85)
+        mw = self.image_cfg.get("max_width", 1920)
+        mh = self.image_cfg.get("max_height", 1080)
+        q = self.image_cfg.get("webp_quality", 60)
         cname = cache_key(fname, mw, mh, q)
         cpath = os.path.join(self.cache_dir, cname)
 
@@ -333,8 +284,7 @@ class YankunHandler(BaseHTTPRequestHandler):
                 pass
 
         if need:
-            if not resize_and_cache(orig, cpath, mw, mh, q,
-                                    is_raw=is_raw):
+            if not resize_and_cache(orig, cpath, mw, mh, q):
                 self._serve_raw_file(orig, ext)
                 return
 
@@ -451,7 +401,55 @@ def main():
     for k in ("cache_dir", "static_dir"):
         os.makedirs(resolve_path(root, cfg["paths"][k]), exist_ok=True)
     handler = make_handler(cfg, root)
-    srv = HTTPServer((host, port), handler)
+    import threading
+
+    def pre_cache_one(orig, cache, mw, mh, q):
+        """Pre-cache one image in background."""
+        need = True
+        if os.path.isfile(cache):
+            try:
+                if os.path.getmtime(cache) >= os.path.getmtime(orig):
+                    need = False
+            except OSError:
+                pass
+        if need:
+            print(f"[PRE-CACHE] {os.path.basename(orig)}")
+            resize_and_cache(orig, cache, mw, mh, q)
+
+    def pre_cache_all(handler):
+        """Background thread: pre-generate WebP caches for all images at startup."""
+        mw = handler.image_cfg.get("max_width", 1920)
+        mh = handler.image_cfg.get("max_height", 1080)
+        q = handler.image_cfg.get("webp_quality", 60)
+
+        for mdir in handler.media_dirs:
+            if not os.path.isdir(mdir):
+                continue
+            try:
+                entries = sorted(os.listdir(mdir))
+            except OSError:
+                continue
+            for fname in entries:
+                full = os.path.join(mdir, fname)
+                if not os.path.isfile(full):
+                    continue
+                mtype = classify_media(fname, handler.config)
+                if mtype != "image":
+                    continue
+                ext = ext_lower(fname)
+                # Skip GIF and SVG (served raw, no caching needed)
+                if ext in (GIF_EXTENSION, SVG_EXTENSION):
+                    continue
+                cname = cache_key(fname, mw, mh, q)
+                cpath = os.path.join(handler.cache_dir, cname)
+                pre_cache_one(full, cpath, mw, mh, q)
+
+        print("[YankunFrame] Pre-cache complete.")
+
+    t = threading.Thread(target=pre_cache_all, args=(handler,), daemon=True)
+    t.start()
+
+    srv = ThreadingHTTPServer((host, port), handler)
     print(f'[YankunFrame] http://{host}:{port}')
     print(f'[YankunFrame] Media dirs: {handler.media_dirs}')
     print('[YankunFrame] Press Ctrl+C to stop.')

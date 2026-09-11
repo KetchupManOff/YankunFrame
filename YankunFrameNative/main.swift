@@ -127,10 +127,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
         process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
         process.arguments = ["server.py"]
 
-        // Set working directory to the app's Resources folder
-        if let resourcePath = Bundle.main.resourcePath {
-            process.currentDirectoryURL = URL(fileURLWithPath: resourcePath)
-        }
+        // Set working directory to the PARENT of the .app bundle
+        // (e.g. ~/Desktop/YankunFrame/), NOT inside the bundle.
+        // This way ./photos, ./cache, ./static resolve to the user-accessible
+        // folders where photos are actually stored.
+        let appParent = Bundle.main.bundleURL.deletingLastPathComponent()
+        process.currentDirectoryURL = appParent
+
+        print("[YankunFrame] Working directory: \(appParent.path)")
 
         do {
             try process.run()

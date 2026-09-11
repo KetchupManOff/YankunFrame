@@ -1,4 +1,39 @@
 ============================================================
+[2026-09-11] Fixed "no images" + performance on old iMac
+-----------------------------------------------------------
+Modified: YankunFrameNative/main.swift
+  - Changed launchServer() working directory from Bundle.main.resourcePath
+    (inside .app bundle) to Bundle.main.bundleURL.deletingLastPathComponent()
+    (parent of .app, i.e. ~/Desktop/YankunFrame/)
+  - This fixes the bug where ./photos resolved inside the bundle and was empty
+
+Modified: server.py
+  - Changed HTTPServer → ThreadingHTTPServer (ThreadingMixIn)
+    Slow RAW processing no longer blocks all other requests
+  - Lowered default image processing: 4096x2304 → 1920x1080, q85 → q60
+  - Added background pre-caching at startup (pre_cache_all thread)
+  - Added config.json defaults updated to match
+
+Modified: config.json
+  - max_width: 4096 → 1920, max_height: 2304 → 1080, webp_quality: 85 → 60
+
+Modified: static/index.html
+  - Added loading overlay (#loading-overlay) with spinner + message
+
+Modified: static/css/styles.css
+  - Added .loading-overlay, .loading-spinner styles
+
+Modified: static/js/app.js
+  - Hides loading overlay when first image is shown
+  - Shows error messages ("Cannot connect...", "No photos found...") in overlay
+
+Created: AI_AGENT_GUIDE.md
+  - Comprehensive guide for future AI agents working on this project
+  - iMac connection info, architecture, files, troubleshooting, development workflow
+
+NOTE: Must deploy to iMac AND recompile the .app (bash compile.sh) for Swift changes.
+      Server + static changes take effect without recompilation (just restart app).
+============================================================
 YankunFrame - AI Changelog
 ============================================================
 
