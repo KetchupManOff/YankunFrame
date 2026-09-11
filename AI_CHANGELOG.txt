@@ -1,252 +1,38 @@
-YankunFrame AI Changelog
-==========================
+============================================================
+YankunFrame - AI Changelog
+============================================================
 
-2026-09-09 11:15 - REFACTOR: Replaced native <select> with custom dropdown components
-  Files modified:
-  - static/index.html:
-    * Les 4 <select> (Display Mode, Interval, Transition, Order) remplacés
-      par des <div class="custom-select"> avec trigger + <ul> d'options
-  - static/css/styles.css:
-    * Supprimé `.setting-row select`
-    * Ajouté tout le système `.custom-select` :
-      - .custom-select-trigger : bouton avec flèche ▼ animée
-      - .custom-select-options : dropdown avec opacity/transform transition
-      - .custom-select.open : ouvre avec animation
-      - li:hover / li.selected : états visuels
-  - static/js/settings.js:
-    * Nouvelles fonctions : selectOption(), readSelectValue(),
-      setupCustomSelects()
-    * setupCustomSelects() gère :
-      - Click trigger → toggle open/close (ferme les autres)
-      - Click li → sélectionne + ferme + sauvegarde dans localStorage
-      - Click outside → ferme tout dropdown ouvert
-    * applyToUI / readFromUI réécrits pour lire/écrire via data-value
-      au lieu de .value de <select>
-  Raison : Les <select> natifs dans WKWebView utilisent des NSPopUpButton
-  (AppKit natif). Les moniteurs clavier Swift (NSEvent.addLocalMonitor)
-  interceptent les touches avant la popup native, rendant les <select>
-  inutilisables. La solution custom composée uniquement de <div>/<ul>/<li>
-  évite complètement le problème — aucun composant AppKit n'est impliqué,
-  tout est géré en HTML/CSS/JS pur.
+[2026-09-10] RE-FIX: Thread.sleep blocking main thread (app hang on launch)
+---------------------------------------------------
+- Modified: YankunFrameNative/main.swift
+  - REMOVED: Thread.sleep(forTimeInterval: 2.0) — was blocking main thread,
+    preventing window creation. Fix from earlier today was not persisted.
+  - REORDERED: Window + WebView created FIRST, server launched after
+  - Page load deferred via DispatchQueue.main.asyncAfter(2s) instead of blocking
+  - Added NSApp.activate(ignoringOtherApps: true) for proper focus
+- Reason: After Mac reboot, app bounced forever in Dock — main thread blocked
+  by Thread.sleep before window was created. The fix documented in the
+  previous changelog entry had not been actually applied to the file.
 
-2026-09-09 11:00 - FIX: Native <select> dropdowns broken by Swift keyboard monitor
-  Files modified:
-  - YankunFrameNative/main.swift:
-    * Clavier Swift : retiré l'interception des touches fléchées (← →)
-      → la navigation photo est maintenant gérée uniquement par JS (app.js)
-    * Ajouté une détection de popup native : si le firstResponder n'est PAS
-      le webView ou le contentView (ex: popup de <select>, NSPopUpButton),
-      toutes les touches passent à travers sans être interceptées
-    * Seules les touches F (toggle fullscreen) et Esc (bloqué) restent
-      interceptées, et uniquement quand le firstResponder = WebView
-  - static/js/app.js:
-    * setupKeyboard() : ajouté `tag === "SELECT"` au check de focus
-      pour que les flèches ne soient pas interceptées par JS non plus
-      quand un <select> a le focus
-  Raison : Les <select> natifs dans WKWebView utilisent des NSPopUpButton
-  (composant AppKit). Le moniteur clavier Swift interceptait les événements
-  avant que la popup native ne les reçoive, empêchant la navigation dans
-  le menu déroulant. Même problème avec Esc (fermeture de la popup).
+[2026-09-10] Sleep prevention for native macOS app
+---------------------------------------------------
+- Modified: YankunFrameNative/main.swift
+  - Added import IOKit.pwr_mgt for sleep assertion API
+  - Added sleepAssertionID property to AppDelegate
+  - Added preventSleep() method using IOPMAssertionCreateWithName
+  - Added applicationWillTerminate() to release assertion on quit
+  - Called preventSleep() after server launch
+- Reason: Prevent Mac display from sleeping while displaying photos
 
-2026-09-09 10:45 - FIX: Settings panel auto-close glitch + cursor conflict
-  Files modified:
-  - static/js/settings.js:
-    * setupPanel() : retiré le `panel.classList.add("hidden")` du timer
-      mousemove — le panneau ne se ferme plus automatiquement après 3s
-      d'inactivité. Seul l'icône ⚙ et le curseur se cachent.
-    * Retiré `document.body.style.cursor = "default"` et `cursor = "none"`
-      → la gestion du curseur est maintenant 100% native Swift (NSCursor)
-      pour éviter les conflits CSS/natif.
-  - static/css/styles.css:
-    * Retiré `cursor: none` du body → plus de conflit avec NSCursor natif
-  Raison : Quand l'utilisateur modifiait des valeurs dans le panneau, le
-  timer mousemove (3s) fermait le panneau brusquement. Pire : JS et Swift
-  se battaient pour cacher/afficher le curseur, causant des flashs.
-  Maintenant : panneau reste ouvert jusqu'à fermeture manuelle, curseur
-  géré uniquement par Swift (NSCursor.hide/unhide).
-
-2026-09-09 10:30 - Cursor auto-hide + fullscreen toggle
-  Files modified:
-  - YankunFrameNative/main.swift:
-    * Cursor auto-hide avec timer (3 secondes d'inactivité)
-      - resetCursorTimer() → unhide + reset le timer
-      - cursorHideTimerFired() → NSCursor.hide()
-      - Moniteur local sur mouseMoved, leftMouseDown, rightMouseDown,
-        scrollWheel, keyDown → chaque événement réaffiche et reset le timer
-    * Suppression du NSCursor.hide() permanent au lancement
-    * Touche F (keyCode 3) → toggle fullscreen on/off
-    * windowDidExitFullScreen ne force plus le ré-enter en fullscreen,
-      permet de sortir volontairement avec la touche F
-    * Le switch keyboard utilise maintenant un switch propre au lieu
-      d'une cascade if/else
-    * windowDidEnterFullScreen / windowDidExitFullScreen reset le timer
-      curseur pour éviter qu'il reste caché pendant la transition
-  Raison : Le curseur était invisible en permanence (NSCursor.hide() sans
-  jamais de unhide), empêchant d'interagir avec les paramètres. Le
-  fullscreen était verrouillé sans moyen d'en sortir. Maintenant :
-  curseur apparaît au moindre mouvement/clic, disparaît après 3s, et F
-  permet de basculer fullscreen.
-
-2026-09-09 10:15 - FIX: True fullscreen kiosk (no menu bar, no Dock)
-  Files modified:
-  - YankunFrameNative/main.swift:
-    * AppDelegate conforms to NSWindowDelegate (was: only NSApplicationDelegate)
-    * window.collectionBehavior = [.fullScreenPrimary, .fullScreenAuxiliary]
-      → creates a proper native fullscreen Space
-    * NSApp.presentationOptions = [.hideMenuBar, .hideDock]
-      → forces menu bar and Dock to stay hidden even on hover
-    * toggleFullScreen() now delayed by 0.5s (DispatchQueue) to ensure
-      window is fully ready before entering fullscreen
-    * windowDidEnterFullScreen() → re-applies .hideMenuBar + .hideDock
-    * windowDidExitFullScreen() → auto re-enters fullscreen after 0.3s
-      (prevents any accidental exit from kiosk mode)
-  Raison : Le menu bar et le Dock restaient visibles car le window level
-  était .normal et le toggleFullScreen était appelé sans les bons
-  collectionBehavior. Maintenant l'app crée un véritable Space fullscreen
-  natif macOS, sans chrome système visible.
-
-2026-09-09 10:00 - FIX: AppDelegate never set → window never created
-  Files modified:
-  - YankunFrameNative/main.swift:
-    * Déplacé la classe AppDelegate AVANT le point d'entrée
-    * Remplacé NSApplicationMain (qui ne retourne jamais) par le pattern
-      NSApplication.shared + delegate + run()
-    * Le délégué est maintenant explicitement assigné : app.delegate = AppDelegate()
-  Raison : NSApplicationMain() était appelé avant la définition de la classe
-  AppDelegate et sans jamais l'assigner comme delegate. Résultat :
-  applicationDidFinishLaunching() n'était jamais invoqué, aucune fenêtre
-  n'était créée. L'app apparaissait dans la barre de menu mais sans UI.
-
-2026-09-09 00:00 - Native macOS .app (WebKit, borderless kiosk)
-  Files created:
-  - YankunFrameNative/main.swift: Swift app with WKWebView, borderless window,
-    Python server launcher, keyboard arrow navigation (←→), fullscreen.
-  - YankunFrameNative/Info.plist: Bundle config for macOS 10.15+
-  - YankunFrameNative/compile.sh: Compiles Swift → .app, bundles all files
-    inside (self-contained, ~200 KB)
-  Files modified:
-  - run.sh + YankunFrame.command: Native .app gets priority — if found,
-    launch it directly; fall back to browser mode.
-  Reason: WebKit app is lighter than Chrome and gives true borderless window
-  without any toolbar. Compile once on Mac, then use like any macOS app.
-2026-09-08 19:00 - Initial Implementation
-All project files created:
-  server.py, config.json, requirements.txt, run.sh
-  static/index.html, static/css/styles.css
-  static/js/api.js, static/js/preloader.js
-  static/js/settings.js, static/js/app.js
-  PROJECT_STATE.md
-
-2026-09-08 19:30 - Mac line endings fix
-  - run.sh: rewritten with Unix LF endings (no more bad interpreter error)
-  - YankunFrame.command: created new double-clickable macOS launcher
-  Reason: Windows CRLF caused "bad interpreter" on Mac
-
-2026-09-08 20:15 - Major feature update: multi-directory, video/GIF/RAW support
-  Files modified:
-  - config.json: photos_dir → media_dirs (array), added video/gif config,
-    expanded allowed_extensions with 20+ RAW formats + video formats
-  - requirements.txt: added rawpy>=0.21.0
-  - server.py: major rewrite (~240→~400 lines)
-    * Multiple media_dirs support with backward compat for photos_dir
-    * classify_media() returns type: image/video/gif/raw
-    * open_raw_image() via rawpy (JPEG preview first, then full dev)
-    * resize_and_cache() accepts is_raw parameter
-    * /api/config endpoint exposes server config to frontend
-    * /api/config/media-dirs POST to update dirs from UI
-    * /media/ endpoint serves raw video/GIF/SVG files
-    * _find_media_file() searches all media_dirs
-    * _serve_raw_file() serves with proper MIME + Accept-Ranges
-    * Updated MIME_MAP with video/GIF types
-    * log_message() suppressed for clean console
-  - static/index.html: added <video> elements (vid-a, vid-b),
-    new settings: video mute/volume, media folders management UI
-  - static/css/styles.css: video.photo style, settings h3, divider,
-    checkbox, range slider, media-dir-item, add-dir-row styles
-  - static/js/api.js: fetchMediaList, fetchConfig, updateMediaDirs,
-    getMediaUrl added
-  - static/js/preloader.js: dual img+video slot management,
-    setCurrent/preloadNext/swap accept mediaType + volumeSettings,
-    hideAll() for cleanup
-  - static/js/settings.js: videoMuted/videoVolume in DEFAULTS,
-    getVideoSettings(), loadMediaDirs(), renderMediaDirs(),
-    volume slider live update, add dir button, applyToUI updates
-    img+video element styles
-  - static/js/app.js: media array (was images), getUrl() routes
-    image→/image/ video→/media/, all display fns pass type+volume
-  Reason: User requested multi-folder media sources, GIF/video/RAW
-  format support, and video volume/mute controls in app settings
-
-2026-09-08 22:00 - Live photo pool refresh (no restart needed)
-  Files modified:
-  - static/js/app.js:
-    * Added pollTimer and POLL_INTERVAL_MS (30s) variables
-    * Added startPolling() - sets up interval timer
-    * Added pollNewMedia() - fetches /api/images, compares with existing
-      pool by filename, appends new media without interrupting display
-    * start() now calls startPolling() after initial load
-  Reason: User requested that new photos added to media directories
-  appear in the rotation without needing to restart the app on iMac.
-  Client-side polling every 30s detects and merges new files live.
-2026-09-08 23:45 - Chrome kiosk mode (true borderless) + Safari fallback
-  Files modified:
-  - run.sh + YankunFrame.command:
-    * Replaced Safari-only AppleScript with Chrome/Chromium kiosk mode first
-    * `open -a "Google Chrome" --args --kiosk ...` for zero UI chrome
-    * Falls back to Safari + AppleScript fullscreen if Chrome not installed
-  Reason: Safari "Add to Dock" feature was removed in recent macOS.
-  Chrome --kiosk flag gives true borderless fullscreen (no toolbar ever).
-
-2026-09-08 23:30 - Fixed keyboard nav + true kiosk mode
-  Files modified:
-  - static/js/app.js: 
-    * Extracted requestFullscreen() function, called on first key OR click
-    * setupKeyboard() now uses window.addEventListener (capture phase) instead of document
-    * Added e.keyCode/e.which fallback for older Safari (37=Left, 39=Right)
-    * Added e.stopPropagation() to prevent Safari from handling arrows
-    * Auto-focuses body (tabindex=-1) and re-focuses on blur
-    * Added click-to-fullscreen as backup trigger
-  - static/index.html:
-    * Added apple-mobile-web-app-capable meta for Dock standalone mode
-    * Added apple-mobile-web-app-status-bar-style meta
-    * Added apple-mobile-web-app-title meta
-    * body now has tabindex="-1" autofocus for keyboard capture
-  - run.sh + YankunFrame.command:
-    * Removed duplicate 'open' before osascript
-    * AppleScript now also sends Cmd+Shift+\ to hide toolbar after fullscreen
-    * Added tip about Safari → Add to Dock for perfect borderless experience
-  Reason: User reported arrows not working + browser bar still visible.
-  Keyboard: focus management + capture phase + keyCode fallback.
-  Kiosk: Safari native fullscreen always shows bar on hover — the ONLY way
-  to get true borderless is "Add to Dock" (now documented with meta tags).
-
-2026-09-08 23:00 - Safari kiosk/full-screen mode on launch
-  Files modified:
-  - run.sh: replaced `open` with osascript that opens Safari then sends
-    Cmd+Ctrl+F for full-screen, with `|| open` fallback
-  - YankunFrame.command: same osascript full-screen logic
-  - static/js/app.js: setupKeyboard() now requests fullscreen
-    (webkitRequestFullscreen) on first arrow keypress as fallback
-  Reason: User wanted Safari to open without address bar/toolbar
-  (kiosk mode). Dual approach: AppleScript Cmd+Ctrl+F on launch +
-  JS fullscreen API on first user interaction.
-  Note: Terminal needs Accessibility permission for AppleScript to work:
-  System Settings > Privacy & Security > Accessibility > add Terminal
-
-2026-09-08 22:30 - Keyboard navigation (arrow keys)
-  Files modified:
-  - static/js/app.js:
-    * Added setupKeyboard() — binds keydown for ArrowLeft/ArrowRight
-    * Added navigateBy(delta) — moves index with wrap-around, resets auto-timer
-    * Ignores key events when focus is inside INPUT/TEXTAREA
-    * start() calls setupKeyboard() after initial load
-  Reason: User requested manual navigation with keyboard arrows.
-  Left = previous, Right = next. Timer resets on each manual skip.
-  Files created:
-  - send_to_imac.bat: drag-and-drop batch script, loops over dropped
-    files and scp's each one to yank@imac-de-yank.local:/users/yank_imac/
-    Desktop/YankunFrame/photos/. Shows progress [N/TOTAL] with OK/ERREUR.
-  - send_to_imac.ps1: PowerShell version with colored output, same scp
-    logic, can be used from terminal or with drag-and-drop.
-  Reason: User needed a simple way to transfer photos from Windows PC
-  to the iMac photo frame.
+[2026-09-10] Fixed app launch hang + full SCP deployment + rebuild
+---------------------------------------------------
+- Modified: YankunFrameNative/main.swift
+  - REMOVED: Thread.sleep(forTimeInterval: 2.0) — was blocking main thread, preventing window creation
+  - REORDERED: window + WebView created FIRST, server launched, sleep prevention called
+  - Page load now deferred via DispatchQueue.main.asyncAfter (2s delay) instead of blocking sleep
+  - Added NSApp.activate(ignoringOtherApps: true) for proper focus
+  - Fixed: kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString (type cast)
+  - Fixed: LF line endings on main.swift, compile.sh, run.sh, YankunFrame.command
+- Transferred: Full project (17 files) to yank@imac-de-yank.local:/users/yank_imac/Desktop/YankunFrame/
+- Rebuilt: YankunFrame.app on iMac (84 KB, works now)
+- Reason: App was bouncing forever in Dock — main thread blocked by Thread.sleep

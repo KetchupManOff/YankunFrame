@@ -10,13 +10,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
     let cursorIdleTimeout: TimeInterval = 3.0
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // 1. Launch the Python server
-        launchServer()
-
-        // 2. Wait a moment for server to start
-        Thread.sleep(forTimeInterval: 2.0)
-
-        // 3. Create a borderless full-screen window
+        // 1. Create a borderless full-screen window FIRST (unblock main thread!)
         let screenRect = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 4096, height: 2304)
 
         window = NSWindow(
@@ -35,8 +29,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
         NSApp.presentationOptions = [.hideMenuBar, .hideDock]
 
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
 
-        // 4. Create WebKit view
+        // 2. Create WebKit view
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()  // Persist localStorage between launches
 
@@ -46,13 +41,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
         webView.setValue(false, forKey: "drawsBackground")  // Transparent bg
         window.contentView?.addSubview(webView)
 
-        // 5. Load the app
-        if let url = URL(string: "http://127.0.0.1:8080") {
-            let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData)
-            webView.load(request)
+        // 3. Launch the Python server (non-blocking)
+        launchServer()
+
+        // 4. Defer page load by 2s to give the server time to start
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if let url = URL(string: "http://127.0.0.1:8080") {
+                let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData)
+                self.webView.load(request)
+            }
         }
 
-        // 6. Enter native fullscreen space (separate Space, no menu bar/Dock)
+        // 5. Enter native fullscreen space (separate Space, no menu bar/Dock)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.window.toggleFullScreen(nil)
         }

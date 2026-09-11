@@ -54,6 +54,7 @@ const ImagePreloader = (() => {
       vidEl.volume = volumeSettings.volume / 100;
       vidEl.load();
       vidEl.classList.add("active");
+      vidEl.play().catch(function(e) { console.warn("Video play prevented:", e); });
     } else {
       imgEl.src = url;
       imgEl.classList.add("active");
@@ -70,6 +71,7 @@ const ImagePreloader = (() => {
       vid.volume = volumeSettings.volume / 100;
       vid.load();
       vid.classList.add("active");
+      vid.play().catch(function(e) { console.warn("Video play prevented:", e); });
       activeSlot = 0;
     } else {
       var img = getEl(slot);
@@ -109,15 +111,19 @@ const ImagePreloader = (() => {
     var newSlot = 1 - activeSlot;
     if (nextUrl && nextType) {
       if (nextType === "video") {
-        getVid(newSlot).classList.add("active");
+        var newVid = getVid(newSlot);
+        newVid.classList.add("active");
+        newVid.play().catch(function(e) { console.warn("Video play prevented:", e); });
       } else {
         getEl(newSlot).classList.add("active");
       }
     } else {
       // already preloaded
       getEl(newSlot).classList.add("active");
-      getVid(newSlot).classList.add("active");
-      // only one is actually loaded
+      var newVid = getVid(newSlot);
+      if (newVid.src && newVid.src !== window.location.href) {
+        newVid.play().catch(function(e) { console.warn("Video play prevented:", e); });
+      }
     }
     activeSlot = newSlot;
 

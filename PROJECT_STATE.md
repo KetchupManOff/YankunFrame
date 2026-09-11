@@ -33,8 +33,11 @@ images, GIFs, videos, and RAW camera formats.
 - Step 5 (preloader.js): COMPLETE — image + video dual-element preloading
 - Step 6 (app.js): COMPLETE — video/GIF/image routing + live polling + keyboard nav
 - Step 7 (run.sh+docs): COMPLETE
-- Step 8 (testing): PENDING
+- Step 8 (testing): IN PROGRESS — video playback fix applied (play() calls added)
 - Step 9 (live refresh): COMPLETE — polls /api/images every 30s, merges new files
 - Step 10 (keyboard nav): COMPLETE — ←→ arrows, wraps around, resets auto-timer
 - Step 11 (kiosk mode): COMPLETE — AppleScript Cmd+Ctrl+F + JS fullscreen fallback + Chrome --kiosk
 - Step 12 (native macOS app): COMPLETE — WKWebView borderless .app in YankunFrameNative/
+- Step 13 (git init + GitHub push): COMPLETE — repo at https://github.com/KetchupManOff/YankunFrame.git
+- Step 14 (sleep prevention): COMPLETE — IOKit assertion prevents display sleep when native app is active
+- Step 15 (startup hang fix): COMPLETE — Removed Thread.sleep blocking, reordered window creation first, deferred page load via DispatchQueue
