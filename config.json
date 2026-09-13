@@ -11,7 +11,8 @@
   "image": {
     "max_width": 4096,
     "max_height": 2304,
-    "webp_quality": 60,
+    "webp_quality": 95,
+    "passthrough_extensions": [".jpg", ".jpeg"],
     "allowed_extensions": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
                            ".tiff", ".tif", ".bmp", ".svg"]
   },

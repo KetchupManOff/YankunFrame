@@ -1,3 +1,109 @@
+[2026-09-13 15:15:21 -04:00] Deploy blurred-background release and rebuild native app
+-----------------------------------------------------------
+- Deployed to: `/Users/yank_imac/Desktop/YankunFrame`
+  - All 12 pending runtime, frontend, native, and documentation source files.
+  - Verified every deployed file against the Windows source using SHA-256.
+- Rebuilt: `YankunFrame.app`
+  - Clean Swift compilation completed successfully on macOS 13.7.8.
+  - App bundle size: 124 KB.
+  - Executable size: 84,752 bytes; timestamp: 2026-09-13 15:14:43 -0400.
+  - Confirmed the generated bundle contains the versioned blurred-background UI.
+- Live validation:
+  - Rebuilt native app launched successfully as PID 6824.
+  - Live CSS contains `blur(50px) brightness(0.85)`.
+  - `/api/config` reports 4096x2304 and `/api/images` reports 50 media items.
+  - Removed the known blocked duplicate backend spawned by the unsigned GUI; verified detached backend PID 6524 remains the sole listener on `127.0.0.1:8080`.
+- Deployment note:
+  - `imac-de-yank.local` was reachable via key-based SSH; the documented `192.168.18.24` address timed out and appears stale.
+- Modified: PROJECT_STATE.md and AI_CHANGELOG.txt
+  - Recorded deployed status, build metadata, validation, runtime processes, and immediate GitHub push step.
+- Reason:
+  - User requested deployment to the iMac, a fresh native build, and publication to GitHub.
+
+============================================================
+[2026-09-13 15:03:24 -04:00] Add dynamic blurred backgrounds for still images
+-----------------------------------------------------------
+- Modified: static/index.html
+  - Added one background image element for each existing still-image buffer.
+  - Versioned the stylesheet, preloader script, and settings script URLs to invalidate stale WKWebView assets after deployment.
+- Modified: static/css/styles.css
+  - Added full-canvas `cover` backdrops with 50px Gaussian blur, 15% brightness reduction, and overscan to prevent blurred edge artifacts.
+  - Kept foreground media above the backdrop and preserved the existing GPU opacity transitions.
+- Modified: static/js/preloader.js
+  - Synchronized backdrop sources and active state with both image preload slots.
+  - Clears backdrops for videos so existing black video presentation remains unchanged.
+- Modified: static/js/settings.js
+  - Synchronized user-selected transition duration with both backdrop buffers while leaving backdrops permanently in `cover` mode.
+- Modified: PROJECT_STATE.md
+  - Documented the new rendering architecture, completed step, validation, and deployment follow-up.
+- Validation:
+  - `node --check` passed for preloader.js, settings.js, and app.js.
+  - `git diff --check` passed.
+  - No browser automation CLI was available on the Windows development host, so final visual verification remains for the target iMac.
+- Reason:
+  - Portrait and non-16:9 still images should fill unused canvas space with a color-matched, unobtrusive duplicate rather than plain black bars.
+
+============================================================
+[2026-09-13 15:00:08 -04:00] Deploy and rebuild JPEG quality fix on iMac
+-----------------------------------------------------------
+- Deployed to: `/Users/yank_imac/Desktop/YankunFrame`
+  - `server.py`, `config.json`, `static/index.html`, `static/js/api.js`
+  - `YankunFrameNative/main.swift`, `compile.sh`, and `Info.plist`
+- Rebuilt: `YankunFrame.app`
+  - Clean Swift build completed successfully on macOS 13.7.8.
+  - Final bundle is 124 KB after removing redundant bundled copies of the 688 MB photo/cache folders.
+  - Binary build timestamp: 2026-09-13 14:58:00.
+- Live validation:
+  - Native app is running.
+  - Exactly one corrected backend listens on `127.0.0.1:8080`.
+  - `/api/config` reports 4096x2304.
+  - Frontend contains the `original-jpeg-v1` cache revision.
+  - `Marzy_et_Nivian.jpg` was returned as `image/jpeg` with bytes identical to the source.
+  - Source and served SHA-256: `395c38e829ac32734ca960c114e66cba39474a49385ca01c0204bb229b4c9199`.
+- Runtime limitation:
+  - macOS stalls Python file access when the unsigned native GUI app directly spawns Python from the protected Desktop folder.
+  - The verified deployed session therefore runs the corrected backend as a detached user process alongside the rebuilt native UI.
+  - Recommended next step is signing the app or moving/installing the runtime outside Desktop, then retesting app-owned server lifecycle.
+- Reason:
+  - User requested deployment to the iMac and a fresh native app build after the photo-quality correction.
+
+============================================================
+[2026-09-13 14:39:43 -04:00] Preserve original JPEG photo quality
+-----------------------------------------------------------
+- Modified: server.py
+  - Added `.jpg`/`.jpeg` passthrough so WKWebView receives the exact original file bytes.
+  - Removed JPEG files from background WebP pre-caching.
+  - Raised the fallback WebP conversion quality from 60 to 95 for formats that still require conversion.
+  - Bound the HTTP socket before starting pre-cache so image encoding cannot delay server availability during launch.
+- Modified: config.json
+  - Added `passthrough_extensions` for JPG/JPEG.
+  - Raised `webp_quality` from 60 to 95.
+- Modified: static/js/api.js
+  - Added an image-pipeline version to photo URLs so WKWebView does not reuse an old q60 response cached under the previous URL.
+- Modified: static/index.html
+  - Versioned the API script URL so the cache-busting image URL logic loads after deployment.
+- Modified: YankunFrameNative/main.swift
+  - Retained the spawned Python process and now terminates it when the native app exits, preventing stale orphan servers after rebuild/relaunch.
+  - Replaced child working-directory mutation with absolute server/config arguments; this avoids a Python 3.9 `getcwd()` hang observed with macOS `/users` vs `/Users` case-aliased paths.
+  - Canonicalized the project path against `homeDirectoryForCurrentUser` so Python receives `/Users/...` rather than LaunchServices' lowercase `/users/...` spelling, which also blocked module file opens.
+  - Set the Python child cwd only after canonicalizing it to `/Users/...`, matching the environment of successful direct server launches while avoiding the lowercase-path deadlock.
+  - Routed Python startup through `/bin/bash` + `exec` to avoid macOS Desktop access mediation stalling the Python framework when spawned directly by the unsigned GUI app.
+- Modified: YankunFrameNative/compile.sh
+  - Stopped copying the root `photos/` and `cache/` folders into the app bundle; runtime uses the root folders, and the redundant copy inflated each build to approximately 683 MB.
+- Modified: AI_AGENT_GUIDE.md
+  - Updated architecture, image configuration, and pre-cache documentation to match the quality-preserving pipeline.
+- Modified: PROJECT_STATE.md
+  - Recorded the current architecture, completed milestone, validation, and required deployment step.
+- Validation:
+  - `python -m py_compile server.py` passed.
+  - Config loading assertions passed.
+  - HTTP integration check confirmed JPEG response bytes exactly match the source and use `image/jpeg`.
+  - HTTP integration check confirmed PNG conversion still creates a correctly resized q95 WebP cache.
+  - `git diff --check` passed.
+- Reason:
+  - The server was decoding every JPEG and re-encoding it as WebP at quality 60. That second lossy compression pass caused the app to look substantially worse than macOS Preview.
+
+============================================================
 [2026-09-13] TIFF conversion + 4K resolution restoration
 -----------------------------------------------------------
 - Modified: send_to_imac.ps1

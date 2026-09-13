@@ -124,20 +124,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
 
     func launchServer() {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
-        process.arguments = ["server.py"]
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
 
-        // Set working directory to the PARENT of the .app bundle
-        // (e.g. ~/Desktop/YankunFrame/), NOT inside the bundle.
-        // This way ./photos, ./cache, ./static resolve to the user-accessible
-        // folders where photos are actually stored.
-        let appParent = Bundle.main.bundleURL.deletingLastPathComponent()
+        // Use absolute paths instead of changing the child working directory.
+        // On case-aliased macOS paths (/users vs /Users), Python 3.9 can block
+        // in getcwd() during startup after Process.currentDirectoryURL is set.
+        let bundleParent = Bundle.main.bundleURL.deletingLastPathComponent()
+        let homeURL = FileManager.default.homeDirectoryForCurrentUser
+        let bundleParentPath = bundleParent.path
+        let homePath = homeURL.path
+        let appParent: URL
+        if bundleParentPath.lowercased().hasPrefix(homePath.lowercased()) {
+            let suffix = bundleParentPath.dropFirst(homePath.count)
+            appParent = URL(fileURLWithPath: homePath + suffix, isDirectory: true)
+        } else {
+            appParent = bundleParent
+        }
+        let serverURL = appParent.appendingPathComponent("server.py")
+        let configURL = appParent.appendingPathComponent("config.json")
+        process.arguments = [
+            "-c",
+            "exec /usr/bin/python3 \"$1\" --config \"$2\"",
+            "YankunFrameServer",
+            serverURL.path,
+            configURL.path
+        ]
         process.currentDirectoryURL = appParent
 
-        print("[YankunFrame] Working directory: \(appParent.path)")
+        print("[YankunFrame] Project directory: \(appParent.path)")
 
         do {
             try process.run()
+            serverTask = process
             print("[YankunFrame] Python server started (PID: \(process.processIdentifier))")
         } catch {
             print("[YankunFrame] Failed to start server: \(error)")
@@ -147,6 +165,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWind
     // Keep app running
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        if let process = serverTask, process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+        }
+        serverTask = nil
     }
 }
 

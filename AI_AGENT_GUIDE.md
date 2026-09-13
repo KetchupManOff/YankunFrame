@@ -15,7 +15,7 @@ YankunFrame.app (Swift + WKWebView)
   └─ WebView → http://127.0.0.1:8080
        └─ Python server (server.py)
             ├─ /api/images  → list media
-            ├─ /image/{name} → resize → WebP cached
+            ├─ /image/{name} → original JPEG or resized WebP cache
             ├─ /media/{name} → serve raw video/GIF/SVG
             └─ /            → static files (index.html + JS/CSS)
 ```
@@ -61,23 +61,24 @@ scp server.py yank@imac-de-yank.local:/users/yank_imac/Desktop/YankunFrame/
 
 1. User launches `YankunFrame.app`
 2. Swift creates borderless fullscreen window + WKWebView
-3. Swift launches `python3 server.py` with **cwd = parent of .app**
-   (e.g. `~/Desktop/YankunFrame/` — `Bundle.main.bundleURL.deletingLastPathComponent()`)
-4. Server starts on :8080, background thread pre-caches all images to WebP
+3. Swift launches Python with absolute paths to `server.py` and `config.json`
+   from the parent of `.app` (e.g. `~/Desktop/YankunFrame/`)
+4. Server starts on :8080; background thread pre-caches images that require WebP conversion
 5. WebView loads `http://127.0.0.1:8080` → index.html → JS
 6. JS calls `GET /api/images` → returns JSON list of media files
 7. JS shows first image via `GET /image/{filename}`
 8. Slideshow cycles, preloading next image
 
-> **Working directory is CRITICAL**: changed from inside .app bundle to parent of .app.
-> This is how `./photos`, `./cache`, `./static` resolve correctly.
+> The backend resolves `./photos`, `./cache`, and `./static` relative to the
+> directory containing `server.py`; the native launcher does not change cwd.
 
-## 5. Config (lowered for old iMac)
+## 5. Image Config
 
 ```json
 {
   "image": {
-    "max_width": 1920, "max_height": 1080, "webp_quality": 60
+    "max_width": 4096, "max_height": 2304, "webp_quality": 95,
+    "passthrough_extensions": [".jpg", ".jpeg"]
   },
   "display": {
     "interval_seconds": 30, "transition_duration_ms": 1500,
@@ -89,7 +90,8 @@ scp server.py yank@imac-de-yank.local:/users/yank_imac/Desktop/YankunFrame/
 ## 6. Server Features
 
 - **ThreadingHTTPServer** — RAWs don't block other requests
-- **Pre-caching** — background thread processes all images at startup
+- **Lossless JPEG delivery** — JPG/JPEG source bytes pass through unchanged
+- **Pre-caching** — background thread processes only formats that require conversion
 - **Cache invalidation** — re-caches if source file is newer
 - **ICC profile** — preserved in WebP output
 
@@ -103,8 +105,8 @@ scp server.py yank@imac-de-yank.local:/users/yank_imac/Desktop/YankunFrame/
 
 **"Mac slow":**
 - RAW files (CR3, 30-50MB) are CPU-heavy
-- Lower `max_width`/`max_height` + `webp_quality` further if needed
-- Pre-caching runs at startup so initial load is slow but slideshow smooth
+- Lower `max_width`/`max_height` for converted formats if needed
+- Pre-caching skips passthrough JPEGs, reducing startup work
 
 ## 8. Recent Fixes (2026-09-11)
 

@@ -21,8 +21,6 @@ mkdir -p "$APP_DIR/Contents/Resources"
 cp -R "$ROOT_DIR/static" "$APP_DIR/Contents/Resources/"
 cp "$ROOT_DIR/server.py" "$APP_DIR/Contents/Resources/"
 cp "$ROOT_DIR/config.json" "$APP_DIR/Contents/Resources/"
-cp -R "$ROOT_DIR/cache" "$APP_DIR/Contents/Resources/" 2>/dev/null
-cp -R "$ROOT_DIR/photos" "$APP_DIR/Contents/Resources/" 2>/dev/null
 mkdir -p "$APP_DIR/Contents/Resources/photos"
 mkdir -p "$APP_DIR/Contents/Resources/cache"
 

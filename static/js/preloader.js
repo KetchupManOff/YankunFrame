@@ -15,6 +15,11 @@ const ImagePreloader = (() => {
     return document.getElementById(prefix);
   }
 
+  function getBackground(slot) {
+    var prefix = slot === 0 ? "bg-a" : "bg-b";
+    return document.getElementById(prefix);
+  }
+
   async function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -25,7 +30,7 @@ const ImagePreloader = (() => {
   }
 
   function hideAll() {
-    ["img-a","img-b","vid-a","vid-b"].forEach(function(id) {
+    ["img-a","img-b","vid-a","vid-b","bg-a","bg-b"].forEach(function(id) {
       var el = document.getElementById(id);
       el.classList.remove("active");
       el.src = "";
@@ -56,6 +61,7 @@ const ImagePreloader = (() => {
     var isVid = (mediaType === "video");
     var imgEl = getEl(slot);
     var vidEl = getVid(slot);
+    var bgEl = getBackground(slot);
 
     // Hide both, then show the right one
     imgEl.classList.remove("active");
@@ -63,6 +69,8 @@ const ImagePreloader = (() => {
     vidEl.classList.remove("active");
     vidEl.pause();
     vidEl.removeAttribute("src");
+    bgEl.classList.remove("active");
+    bgEl.src = "";
 
     if (isVid) {
       vidEl.src = url;
@@ -73,6 +81,8 @@ const ImagePreloader = (() => {
       vidEl.play().catch(function(e) { console.warn("Video play prevented:", e); });
     } else {
       imgEl.src = url;
+      bgEl.src = url;
+      bgEl.classList.add("active");
       imgEl.classList.add("active");
     }
   }
@@ -101,6 +111,9 @@ const ImagePreloader = (() => {
     } else {
       var img = getEl(slot);
       img.src = url;
+      var bg = getBackground(slot);
+      bg.src = url;
+      bg.classList.add("active");
       img.classList.add("active");
       activeSlot = 0;
     }
@@ -122,6 +135,7 @@ const ImagePreloader = (() => {
         await loadImage(url);
         var el = getEl(nextSlot);
         el.src = url;
+        getBackground(nextSlot).src = url;
       } catch (e) { console.warn(e); return null; }
     }
     return true;
@@ -135,6 +149,9 @@ const ImagePreloader = (() => {
     oldVid.classList.remove("active");
     oldVid.pause();
     oldVid.removeAttribute("src");
+    var oldBg = getBackground(activeSlot);
+    oldBg.classList.remove("active");
+    oldBg.src = "";
 
     var newSlot = 1 - activeSlot;
     if (nextUrl && nextType) {
@@ -143,6 +160,7 @@ const ImagePreloader = (() => {
         newVid.classList.add("active");
         newVid.play().catch(function(e) { console.warn("Video play prevented:", e); });
       } else {
+        getBackground(newSlot).classList.add("active");
         getEl(newSlot).classList.add("active");
       }
     } else {

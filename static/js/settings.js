@@ -37,6 +37,9 @@ const Settings = (() => {
       el.style.transitionDuration = dur;
       el.style.objectFit = s.fit;
     });
+    ["bg-a","bg-b"].forEach(function(id) {
+      document.getElementById(id).style.transitionDuration = dur;
+    });
   }
 
   function selectOption(containerId, value) {

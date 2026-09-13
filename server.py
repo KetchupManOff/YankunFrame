@@ -22,7 +22,8 @@ def load_config(path="config.json"):
         "paths": {"media_dirs": ["./photos"], "cache_dir": "./cache",
                   "static_dir": "./static"},
         "image": {
-            "max_width": 4096, "max_height": 2304, "webp_quality": 60,
+            "max_width": 4096, "max_height": 2304, "webp_quality": 95,
+            "passthrough_extensions": [".jpg", ".jpeg"],
             "allowed_extensions": [
                 ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
                 ".tiff", ".tif", ".bmp", ".svg"]
@@ -269,9 +270,18 @@ class YankunHandler(BaseHTTPRequestHandler):
             self._serve_raw_file(orig, ext)
             return
 
+        # JPEG is already natively supported by WKWebView. Serving the source
+        # bytes avoids a second lossy encode (previously JPEG -> WebP q60),
+        # while preserving its full resolution, EXIF orientation, and ICC data.
+        passthrough = self.image_cfg.get(
+            "passthrough_extensions", [".jpg", ".jpeg"])
+        if ext in {item.lower() for item in passthrough}:
+            self._serve_raw_file(orig, ext)
+            return
+
         mw = self.image_cfg.get("max_width", 4096)
         mh = self.image_cfg.get("max_height", 2304)
-        q = self.image_cfg.get("webp_quality", 60)
+        q = self.image_cfg.get("webp_quality", 95)
         cname = cache_key(fname, mw, mh, q)
         cpath = os.path.join(self.cache_dir, cname)
 
@@ -420,7 +430,11 @@ def main():
         """Background thread: pre-generate WebP caches for all images at startup."""
         mw = handler.image_cfg.get("max_width", 4096)
         mh = handler.image_cfg.get("max_height", 2304)
-        q = handler.image_cfg.get("webp_quality", 60)
+        q = handler.image_cfg.get("webp_quality", 95)
+        passthrough = {
+            ext.lower() for ext in handler.image_cfg.get(
+                "passthrough_extensions", [".jpg", ".jpeg"])
+        }
 
         for mdir in handler.media_dirs:
             if not os.path.isdir(mdir):
@@ -437,8 +451,8 @@ def main():
                 if mtype != "image":
                     continue
                 ext = ext_lower(fname)
-                # Skip GIF and SVG (served raw, no caching needed)
-                if ext in (GIF_EXTENSION, SVG_EXTENSION):
+                # Skip formats served directly; they do not need WebP caches.
+                if ext in (GIF_EXTENSION, SVG_EXTENSION) or ext in passthrough:
                     continue
                 cname = cache_key(fname, mw, mh, q)
                 cpath = os.path.join(handler.cache_dir, cname)
@@ -446,10 +460,12 @@ def main():
 
         print("[YankunFrame] Pre-cache complete.")
 
+    # Bind the HTTP socket before pre-caching starts. Pillow's encoder can hold
+    # the GIL for long stretches, so starting the worker first may delay the
+    # server from becoming reachable during app launch.
+    srv = ThreadingHTTPServer((host, port), handler)
     t = threading.Thread(target=pre_cache_all, args=(handler,), daemon=True)
     t.start()
-
-    srv = ThreadingHTTPServer((host, port), handler)
     print(f'[YankunFrame] http://{host}:{port}')
     print(f'[YankunFrame] Media dirs: {handler.media_dirs}')
     print('[YankunFrame] Press Ctrl+C to stop.')

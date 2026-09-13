@@ -58,6 +58,28 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
+  background: #050505;
+}
+
+.photo-background {
+  position: absolute;
+  inset: -60px;
+  width: calc(100% + 120px);
+  height: calc(100% + 120px);
+  object-fit: cover;
+  filter: blur(50px) brightness(0.85);
+  will-change: opacity;
+  transform: translateZ(0) scale(1.03);
+  backface-visibility: hidden;
+  transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.photo-background.active {
+  opacity: 1;
 }
 
 .photo {
@@ -77,12 +99,12 @@ html, body {
 
 .photo.active {
   opacity: 1;
-  z-index: 1;
+  z-index: 2;
 }
 
 .photo.next {
   opacity: 0;
-  z-index: 0;
+  z-index: 1;
 }
 
 video.photo {

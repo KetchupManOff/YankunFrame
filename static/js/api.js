@@ -1,4 +1,6 @@
 const YankunAPI = (() => {
+  const IMAGE_PIPELINE_VERSION = "original-jpeg-v1";
+
   async function fetchMediaList() {
     const resp = await fetch("/api/images");
     if (!resp.ok) throw new Error("API error: " + resp.status);
@@ -22,7 +24,8 @@ const YankunAPI = (() => {
   }
 
   function getImageUrl(filename) {
-    return "/image/" + encodeURIComponent(filename);
+    return "/image/" + encodeURIComponent(filename) +
+      "?v=" + IMAGE_PIPELINE_VERSION;
   }
 
   function getMediaUrl(filename) {
