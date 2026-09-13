@@ -73,7 +73,7 @@ set "EXT=%~x1"
 set "ACTION="
 
 REM Check permitted extensions first (send as-is)
-for %%e in (".JPG" ".JPEG" ".PNG" ".WEBP" ".HEIC" ".HEIF" ".TIFF" ".TIF" ".BMP" ".SVG" ".MP4" ".WEBM" ".MOV" ".AVI" ".MKV" ".M4V" ".GIF") do (
+for %%e in (".JPG" ".JPEG" ".PNG" ".WEBP" ".HEIC" ".HEIF" ".BMP" ".SVG" ".MP4" ".WEBM" ".MOV" ".AVI" ".MKV" ".M4V" ".GIF") do (
     if /i "!EXT!"=="%%e" set "ACTION=send as-is"
 )
 REM Check RAW extensions
@@ -90,7 +90,7 @@ if not defined ACTION (
 )
 REM Check non-permitted image extensions
 if not defined ACTION (
-    for %%e in (".PSD" ".EPS" ".AI" ".PCX" ".TGA" ".ICNS" ".JP2" ".J2K" ".JPX" ".EXR" ".HDR") do (
+    for %%e in (".TIFF" ".TIF" ".PSD" ".EPS" ".AI" ".PCX" ".TGA" ".ICNS" ".JP2" ".J2K" ".JPX" ".EXR" ".HDR") do (
         if /i "!EXT!"=="%%e" set "ACTION=image->JPG"
     )
 )

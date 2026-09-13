@@ -1,5 +1,45 @@
+[2026-09-13] TIFF conversion + 4K resolution restoration
+-----------------------------------------------------------
+- Modified: send_to_imac.ps1
+  - Moved .tiff/.tif from $PERMITTED to $IMAGE_CONVERT_EXTS (now converted to JPEG before SCP)
+  - Fixed ffmpeg scale filter quote typo: `min'(2304,ih)'` → `'min(2304,ih)'` (2 occurrences)
+
+- Modified: send_to_imac.bat
+  - Moved .TIFF/.TIF from permitted list to image conversion list (now converted to JPG)
+
+- Modified: send_to_imac.sh
+  - Removed .tiff .tif from PERMITTED; added to IMAGE_CONVERT_EXTS
+
+- Modified: config.json
+  - Restored 4K resolution: max_width 1920→4096, max_height 1080→2304
+
+- Modified: server.py
+  - Updated all hardcoded fallback defaults: 1920/1080 → 4096/2304
+  - Lines affected: default config (L25), image serving (L272-273), pre-cache (L421-422)
+
+- Reason:
+  1. TIF files were sent as-is to the iMac which can't display them natively;
+     now converted to JPEG (resized to 4K max, 85% quality) before transfer
+  2. Photos were being downsampled to 1920x1080 on the 4K iMac;
+     restored to original resolution up to 4K (4096x2304 DCI-P3)
+
 ============================================================
-[2026-09-11] Fixed "no images" + performance on old iMac
+============================================================
+[2026-09-11] GitHub pull from origin/main (f815200)
+-----------------------------------------------------------
+Pulled 39 objects (987 insertions, 123 deletions) across 12 files:
+- NEW: AI_AGENT_GUIDE.md — Guide for AI agents working on this project
+- NEW: AI_CHANGELOG.txt — This changelog file
+- NEW: send_to_imac.sh — macOS/Linux SCP transfer script (203 lines)
+- Modified: server.py — Refactored (138 lines changed)
+- Modified: send_to_imac.ps1 — Major improvements (257 lines changed)
+- Modified: send_to_imac.bat — Major improvements (199 lines changed)
+- Modified: YankunFrameNative/main.swift — Tweaks (12 lines changed)
+- Modified: config.json — Updated config (12 lines changed)
+- Modified: static/css/styles.css — New styles (32 lines added)
+- Modified: static/js/app.js — Enhancements (23 lines changed)
+- Modified: static/js/preloader.js — Enhancements (38 lines changed)
+- Modified: static/index.html — Minor additions (5 lines)
 -----------------------------------------------------------
 Modified: YankunFrameNative/main.swift
   - Changed launchServer() working directory from Bundle.main.resourcePath

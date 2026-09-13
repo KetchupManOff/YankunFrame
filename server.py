@@ -22,7 +22,7 @@ def load_config(path="config.json"):
         "paths": {"media_dirs": ["./photos"], "cache_dir": "./cache",
                   "static_dir": "./static"},
         "image": {
-            "max_width": 1920, "max_height": 1080, "webp_quality": 60,
+            "max_width": 4096, "max_height": 2304, "webp_quality": 60,
             "allowed_extensions": [
                 ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
                 ".tiff", ".tif", ".bmp", ".svg"]
@@ -269,8 +269,8 @@ class YankunHandler(BaseHTTPRequestHandler):
             self._serve_raw_file(orig, ext)
             return
 
-        mw = self.image_cfg.get("max_width", 1920)
-        mh = self.image_cfg.get("max_height", 1080)
+        mw = self.image_cfg.get("max_width", 4096)
+        mh = self.image_cfg.get("max_height", 2304)
         q = self.image_cfg.get("webp_quality", 60)
         cname = cache_key(fname, mw, mh, q)
         cpath = os.path.join(self.cache_dir, cname)
@@ -418,8 +418,8 @@ def main():
 
     def pre_cache_all(handler):
         """Background thread: pre-generate WebP caches for all images at startup."""
-        mw = handler.image_cfg.get("max_width", 1920)
-        mh = handler.image_cfg.get("max_height", 1080)
+        mw = handler.image_cfg.get("max_width", 4096)
+        mh = handler.image_cfg.get("max_height", 2304)
         q = handler.image_cfg.get("webp_quality", 60)
 
         for mdir in handler.media_dirs:

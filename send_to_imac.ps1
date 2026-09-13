@@ -20,7 +20,7 @@ $DEST   = "/users/yank_imac/Desktop/YankunFrame/photos/"
 # Permitted extensions (kept in sync with config.json)
 $PERMITTED = @(
     ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
-    ".tiff", ".tif", ".bmp", ".svg",
+    ".bmp", ".svg",
     ".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v",
     ".gif"
 )
@@ -58,6 +58,7 @@ $VIDEO_CONVERT_EXTS = @(
 
 # Extra image formats -> convert to JPEG
 $IMAGE_CONVERT_EXTS = @(
+    ".tiff", ".tif",
     ".psd", ".eps", ".ai",
     ".pcx", ".tga", ".icns",
     ".jp2", ".j2k", ".jpx",
@@ -100,7 +101,7 @@ function Convert-RawToJpeg {
     # Fallback to ffmpeg
     if ($FFMPEG) {
         & ffmpeg -y -i $InputPath `
-            -vf "scale='min(4096,iw)':min'(2304,ih)':force_original_aspect_ratio=decrease" `
+            -vf "scale='min(4096,iw)':'min(2304,ih)':force_original_aspect_ratio=decrease" `
             -q:v 3 $OutputPath 2>$null
         if ($LASTEXITCODE -eq 0 -and (Test-Path $OutputPath)) { return $true }
     }
@@ -119,7 +120,7 @@ function Convert-ImageToJpeg {
     
     if ($FFMPEG) {
         & ffmpeg -y -i $InputPath `
-            -vf "scale='min(4096,iw)':min'(2304,ih)':force_original_aspect_ratio=decrease" `
+            -vf "scale='min(4096,iw)':'min(2304,ih)':force_original_aspect_ratio=decrease" `
             -q:v 3 $OutputPath 2>$null
         if ($LASTEXITCODE -eq 0 -and (Test-Path $OutputPath)) { return $true }
     }

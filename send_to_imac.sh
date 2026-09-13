@@ -15,7 +15,7 @@ REMOTE="yank@imac-de-yank.local"
 DEST="/users/yank_imac/Desktop/YankunFrame/photos/"
 
 # Permitted extensions (kept in sync with config.json)
-PERMITTED=".jpg .jpeg .png .webp .heic .heif .tiff .tif .bmp .svg .mp4 .webm .mov .avi .mkv .m4v .gif"
+PERMITTED=".jpg .jpeg .png .webp .heic .heif .bmp .svg .mp4 .webm .mov .avi .mkv .m4v .gif"
 
 # RAW photo extensions -> convert to JPEG
 RAW_EXTS=".cr2 .cr3 .crw .nef .nrw .arw .srf .sr2 .dng .orf .raf .rw2 .pef .3fr .mef .mos .erf .kdc .dcr .mrw .x3f .fff"
@@ -24,7 +24,7 @@ RAW_EXTS=".cr2 .cr3 .crw .nef .nrw .arw .srf .sr2 .dng .orf .raf .rw2 .pef .3fr 
 VIDEO_CONVERT_EXTS=".wmv .flv .3gp .3g2 .mts .m2ts .m2t .vob .ogv .ogg .ts .mxf .divx .xvid .rm .rmvb .asf"
 
 # Image extensions NOT permitted -> convert to JPEG
-IMAGE_CONVERT_EXTS=".psd .eps .ai .pcx .tga .icns .jp2 .j2k .jpx .exr .hdr"
+IMAGE_CONVERT_EXTS=".tiff .tif .psd .eps .ai .pcx .tga .icns .jp2 .j2k .jpx .exr .hdr"
 
 # ── Helpers ────────────────────────────────────────────────
 have() { command -v "$1" >/dev/null 2>&1; }

@@ -41,3 +41,5 @@ images, GIFs, videos, and RAW camera formats.
 - Step 13 (git init + GitHub push): COMPLETE — repo at https://github.com/KetchupManOff/YankunFrame.git
 - Step 14 (sleep prevention): COMPLETE — IOKit assertion prevents display sleep when native app is active
 - Step 15 (startup hang fix): COMPLETE — Removed Thread.sleep blocking, reordered window creation first, deferred page load via DispatchQueue
+- Step 16 (GitHub sync 2026-09-11): COMPLETE — Pulled f815200: server.py refactor, send_to_imac improvements (bat/ps1/sh), native app tweaks, CSS/JS enhancements, AI agent guide + changelog added
+- Step 17 (TIFF conversion + 4K resolution): COMPLETE — .tiff/.tif now converted to JPEG in all send scripts; server restored to 4K native (4096×2304) with original-size-until-4K policy
